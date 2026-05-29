@@ -1,9 +1,13 @@
 from pathlib import Path
+import warnings
+from django.core.exceptions import ImproperlyConfigured
 
-from .env import env, env_bool, env_list
+from .env import database_from_url, env, env_bool, env_list, load_env_file
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_env_file(BASE_DIR.parent / ".env")
+load_env_file(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-only-internship-logging-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", True)
@@ -52,20 +56,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", "iles"),
-        "USER": env("POSTGRES_USER", "postgres"),
-        "PASSWORD": env("POSTGRES_PASSWORD", ""),
-        "HOST": env("POSTGRES_HOST", "127.0.0.1"),
-        "PORT": env("POSTGRES_PORT", "55432"),
-        "CONN_MAX_AGE": int(env("POSTGRES_CONN_MAX_AGE", "60")),
-        "TEST": {
-            "NAME": env("POSTGRES_TEST_DB", "test_iles"),
-        },
+DATABASE_URL = env("NEON_DATABASE_URL") or env("DATABASE_URL")
+if DATABASE_URL:
+    DATABASES = {
+        "default": database_from_url(
+            DATABASE_URL, conn_max_age=int(env("DATABASE_CONN_MAX_AGE", "60"))
+        )
     }
-}
+else:
+    if DEBUG:
+        warnings.warn(
+            "NEON_DATABASE_URL not set — falling back to SQLite for development.",
+            RuntimeWarning,
+        )
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": str(BASE_DIR / "db.sqlite3"),
+            }
+        }
+    else:
+        raise ImproperlyConfigured(
+            "Set NEON_DATABASE_URL or DATABASE_URL to your Neon Postgres connection string. "
+            "Example: postgresql://user:password@ep-example.region.aws.neon.tech/neondb?sslmode=require"
+        )
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

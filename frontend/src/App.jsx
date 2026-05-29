@@ -75,7 +75,7 @@ function App() {
       setDocuments(workspace.documents)
       setVisits(workspace.visits)
     } catch {
-      setError(`API unavailable at ${API_BASE_URL}. Start Django and seed PostgreSQL.`)
+      setError(`API unavailable at ${API_BASE_URL}. Start Django and seed Neon Postgres.`)
     } finally {
       setLoading(false)
     }
