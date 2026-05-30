@@ -105,6 +105,9 @@ CORS_ALLOWED_ORIGINS = env_list(
         "http://127.0.0.1:5174",
         "https://vercel.com/muwanguzi-david-jeremiahs-projects/iles/2jBXc8uSna4cWXL6hzQ4DWUKTitr",
         "https://iles-sepia.vercel.app/",
+        "https://iles-d4ub.vercel.app",
+        
+
     ],
 )
 
