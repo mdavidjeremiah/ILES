@@ -24,11 +24,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "internships",
+    "rest_framework.authtoken",
+
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -106,7 +108,7 @@ CORS_ALLOWED_ORIGINS = env_list(
         "https://vercel.com/muwanguzi-david-jeremiahs-projects/iles/2jBXc8uSna4cWXL6hzQ4DWUKTitr",
         "https://iles-sepia.vercel.app/",
         "https://iles-d4ub.vercel.app",
-        
+
 
     ],
 )
