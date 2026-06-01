@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Project-level seeding helper.
+"""Backend-level seeding helper.
 
 Usage:
-  python seed.py [--noinput] [--demo] [--username USERNAME --email EMAIL --password PASSWORD]
+  python backend/seed.py [--noinput] [--demo] [--username USERNAME --email EMAIL --password PASSWORD]
 
 This script will:
 - run Django migrations
 - optionally run the `seed_demo` management command
 - optionally create a superuser (idempotent)
 
-It invokes `backend/manage.py` for management commands and uses Django's ORM
+It invokes `manage.py` in the backend package and uses Django's ORM
 to create a superuser in-process.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-MANAGE_PY = ROOT / "backend" / "manage.py"
+MANAGE_PY = ROOT / "manage.py"
 
 
 def run_manage_cmd(*args: str) -> None:
@@ -41,7 +41,7 @@ def run_seed_demo() -> None:
 
 def create_superuser(username: str, email: str, password: str) -> None:
     # Ensure backend package is importable (so settings/config modules resolve)
-    backend_path = str(ROOT / "backend")
+    backend_path = str(ROOT)
     if backend_path not in sys.path:
         sys.path.insert(0, backend_path)
 
@@ -49,6 +49,7 @@ def create_superuser(username: str, email: str, password: str) -> None:
 
     try:
         import django
+
         django.setup()
         from django.contrib.auth import get_user_model
 
