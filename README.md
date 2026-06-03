@@ -19,7 +19,7 @@ For hosted/serverless deployments, Neon recommends the pooled connection string 
 
 The backend deploys to Render from `render.yaml`. Set `NEON_DATABASE_URL` in Render before deploying.
 
-The frontend deploys to Vercel from the repository root. `vercel.json` builds `frontend/` and proxies `/api/*` to the Render backend. If the Render service URL changes, update the rewrite destination in `vercel.json`.
+The frontend deploys to Vercel from the repository root with the project Framework Preset set to **Services**. `vercel.json` declares `frontend/` as the root Vite service and proxies `/api/*` to the Render backend. If the Render service URL changes, update the rewrite destination in `vercel.json`.
 
 ## Backend
 
