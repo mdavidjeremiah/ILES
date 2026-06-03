@@ -1,16 +1,15 @@
+
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "frontend/package.json",
-            "use": "@vercel/static-build",
-            "config": { "distDir": "dist" }
+    "experimentalServices": {
+        "frontend": {
+            "root": "frontend",
+            "routePrefix": "/",
+            "framework": "vite"
+        },
+        "backend": {
+            "root": "backend",
+            "routePrefix": "/_/backend",
+            "framework": "django"
         }
-    ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "dest": "https://iles-1.onrender.com"
-        }
-    ]
+    }
 }
