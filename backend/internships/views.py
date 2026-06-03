@@ -1,6 +1,10 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 from .models import Company, Department, Document, Evaluation, LogEntry, Placement, Student, Supervisor, Visit
 from .selectors import dashboard_payload
@@ -78,10 +82,16 @@ def health_check(_request):
 
 @api_view(["POST"])
 def signup(request):
-    serializer = AccountSignupSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    user = serializer.save()
-    return Response(AccountSerializer(user).data, status=status.HTTP_201_CREATED)
+    logger.info("Signup attempt from %s; keys=%s", request.META.get("REMOTE_ADDR"), list(request.data.keys()))
+    try:
+        serializer = AccountSignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        logger.info("Signup successful: %s (id=%s)", user.email, getattr(user, 'id', None))
+        return Response(AccountSerializer(user).data, status=status.HTTP_201_CREATED)
+    except Exception:
+        logger.exception("Signup failed for request from %s", request.META.get("REMOTE_ADDR"))
+        raise
 
 
 @api_view(["POST"])

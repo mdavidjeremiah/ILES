@@ -113,6 +113,15 @@ CORS_ALLOWED_ORIGINS = env_list(
     ],
 )
 
+# Allow any Vercel preview/production domain (e.g. https://<project>.<team>.vercel.app)
+# This avoids having to list each deployment domain explicitly in the env var.
+CORS_ALLOWED_ORIGIN_REGEXES = env_list(
+    "DJANGO_CORS_ALLOWED_ORIGIN_REGEXES",
+    [
+        r"^https://.*\\.vercel\\.app$",
+    ],
+)
+
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_PAGINATION_CLASS": None,
