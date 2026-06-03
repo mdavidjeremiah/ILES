@@ -4,7 +4,7 @@ Full-stack ILES application using Django REST, React, and Neon Postgres.
 
 ## Database
 
-The backend uses NeonDB only. There is no SQLite fallback and no local PostgreSQL workflow.
+Production deployments require Neon Postgres. Local debug runs can fall back to SQLite when `NEON_DATABASE_URL` is not set, but Render must have `NEON_DATABASE_URL` configured.
 
 Create a Neon project, open **Connect**, copy the Neon Postgres connection string, and set it as `NEON_DATABASE_URL`.
 The URL should look like:
@@ -14,6 +14,12 @@ postgresql://USER:PASSWORD@HOST.neon.tech/neondb?sslmode=require
 ```
 
 For hosted/serverless deployments, Neon recommends the pooled connection string when your app can create many concurrent connections.
+
+## Deployment
+
+The backend deploys to Render from `render.yaml`. Set `NEON_DATABASE_URL` in Render before deploying.
+
+The frontend deploys to Vercel from the repository root. `vercel.json` builds `frontend/` and proxies `/api/*` to the Render backend. If the Render service URL changes, update the rewrite destination in `vercel.json`.
 
 ## Backend
 
