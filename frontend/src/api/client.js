@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'
+// In production we expect the frontend to be served from Vercel and use the
+// Vercel proxy route `/api` to reach the backend. Allow overriding with
+// `VITE_API_BASE_URL` during development or in env if needed.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
