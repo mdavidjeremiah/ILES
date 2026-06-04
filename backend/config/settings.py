@@ -102,7 +102,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = str(BASE_DIR / "staticfiles")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = env_list(
@@ -112,8 +112,7 @@ CORS_ALLOWED_ORIGINS = env_list(
         "http://localhost:5174",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
-        "https://iles-sepia.vercel.app",
-        "https://iles-d4ub.vercel.app",    
+        "https://iles-beta.vercel.app",   
         "https://iles-1.onrender.com",
     ],
 )
