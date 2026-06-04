@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 
 import { API_BASE_URL, createResource as apiCreateResource, fetchWorkspace, patchResource } from './api/client'
+import { supabase } from './utils/supabase'
 import { AppShell } from './components/AppShell'
 import { Modal } from './components/Modal'
 import { EvaluationForm } from './forms/EvaluationForm'
@@ -20,25 +21,9 @@ import './App.css'
 
 const USER_KEY = 'iles_user'
 
-const storedUser = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem(USER_KEY) || 'null')
-    if (!user) return null
-
-    if (user.source !== 'server') {
-      localStorage.removeItem(USER_KEY)
-      return null
-    }
-
-    return user
-  } catch {
-    localStorage.removeItem(USER_KEY)
-    return null
-  }
-}
-
 function App() {
-  const [user, setUser] = useState(storedUser)
+  const [user, setUser] = useState(null)
+  const [authInitialized, setAuthInitialized] = useState(false)
   const [activePage, setActivePage] = useState('dashboard')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
@@ -80,23 +65,79 @@ function App() {
       setLoading(false)
     }
   }, [user])
+// Initialize Supabase auth listener
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        // Check for existing session
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          // Retrieve stored user info from localStorage
+          const storedUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null')
+          if (storedUser && storedUser.source === 'server') {
+            setUser(storedUser)
+          }
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err)
+      } finally {
+        setAuthInitialized(true)
+      }
+    }
+
+    initializeAuth()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!session?.user) {
+          setUser(null)
+          localStorage.removeItem(USER_KEY)
+        }
+      }
+    )
+
+    return () => subscription?.unsubscribe()
+  }, [])
 
   useEffect(() => {
+    if (!authInitialized) return
     const timer = window.setTimeout(() => {
       loadData()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [loadData])
+  }, [loadData, authInitialized])
 
-  const login = (nextUser) => {
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
-    setUser(nextUser)
+  const login = async (nextUser) => {
+    try {
+      // Sign in with Supabase
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: nextUser.email,
+        password: nextUser.password,
+      })
+
+      if (signInError) {
+        setError(`Login failed: ${signInError.message}`)
+        return
+      }
+
+      // Store user info (server-verified data) in localStorage
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
+      setUser(nextUser)
+    } catch (err) {
+      setError(`Login error: ${err.message}`)
+    }
   }
 
-  const logout = () => {
-    localStorage.removeItem(USER_KEY)
-    setUser(null)
-    setActivePage('dashboard')
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut()
+      localStorage.removeItem(USER_KEY)
+      setUser(null)
+      setActivePage('dashboard')
+    } catch (err) {
+      setError(`Logout error: ${err.message}`)
+    }
   }
 
   const createResource = async (resource, payload) => {
@@ -129,6 +170,14 @@ function App() {
 
   const updateLogStatus = (log, status) => updateResource('logs', log.id, { status })
   const approveEvaluation = (evaluation) => updateResource('evaluations', evaluation.id, { status: 'approved' })
+
+  if (!authInitialized) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <p>Loading...</p>
+      </div>
+    )
+  }
 
   if (!user) {
     return <LoginPage onLogin={login} />
