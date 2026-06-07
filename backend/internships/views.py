@@ -77,21 +77,28 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
 @api_view(["GET"])
 def health_check(_request):
-    return Response({"status": "ok", "service": "internship-logging-evaluation"})
+    from django.db import connection
+
+    payload = {"status": "ok", "service": "internship-logging-evaluation"}
+    try:
+        connection.ensure_connection()
+        payload["database"] = "ok"
+    except Exception:
+        payload["status"] = "degraded"
+        payload["database"] = "unavailable"
+        return Response(payload, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response(payload)
 
 
 @api_view(["POST"])
 def signup(request):
     logger.info("Signup attempt from %s; keys=%s", request.META.get("REMOTE_ADDR"), list(request.data.keys()))
-    try:
-        serializer = AccountSignupSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        logger.info("Signup successful: %s (id=%s)", user.email, getattr(user, 'id', None))
-        return Response(AccountSerializer(user).data, status=status.HTTP_201_CREATED)
-    except Exception:
-        logger.exception("Signup failed for request from %s", request.META.get("REMOTE_ADDR"))
-        raise
+    serializer = AccountSignupSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    logger.info("Signup successful: %s (id=%s)", user.email, getattr(user, 'id', None))
+    return Response(AccountSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])

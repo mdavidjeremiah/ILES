@@ -77,7 +77,16 @@ export function LoginPage({ onLogin }) {
       }
     } catch (error) {
       const data = error.response?.data
-      const detail = data?.detail || data?.non_field_errors?.[0] || data?.email?.[0]
+      const detail =
+        data?.detail ||
+        data?.non_field_errors?.[0] ||
+        data?.email?.[0] ||
+        data?.first_name?.[0] ||
+        data?.last_name?.[0] ||
+        data?.password?.[0] ||
+        (typeof data === 'string' ? data : undefined) ||
+        (Array.isArray(data) ? data[0] : undefined) ||
+        Object.values(data || {}).flat?.()[0]
       setMessage(detail || 'Unable to complete the request. Check your details and try again.')
     } finally {
       setSubmitting(false)

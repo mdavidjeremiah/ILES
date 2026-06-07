@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 import warnings
 from django.core.exceptions import ImproperlyConfigured
 
@@ -63,8 +64,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+TESTING = "test" in sys.argv
+
 DATABASE_URL = env("NEON_DATABASE_URL") or env("DATABASE_URL")
-if DATABASE_URL:
+if TESTING:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
+elif DATABASE_URL:
     DATABASES = {
         "default": database_from_url(
             DATABASE_URL, conn_max_age=int(env("DATABASE_CONN_MAX_AGE", "60"))

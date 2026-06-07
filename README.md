@@ -2,26 +2,114 @@
 
 Full-stack ILES application using Django REST, React, and Neon Postgres.
 
+## Architecture
+
+```text
+Browser → Vercel (frontend/dist)
+              ↓ /api/*
+         Render (Gunicorn → Django)
+              ↓
+         Neon Postgres
+```
+
 ## Database
 
 Production deployments require Neon Postgres. Local debug runs can fall back to SQLite when `NEON_DATABASE_URL` is not set, but Render must have `NEON_DATABASE_URL` configured.
 
-Create a Neon project, open **Connect**, copy the Neon Postgres connection string, and set it as `NEON_DATABASE_URL`.
+1. Create a [Neon](https://neon.tech) project.
+2. Open **Connect** and copy the Postgres connection string.
+3. Prefer the **pooled** connection string for serverless hosts like Render.
+4. Set it as `NEON_DATABASE_URL`.
+
 The URL should look like:
 
 ```text
 postgresql://USER:PASSWORD@HOST.neon.tech/neondb?sslmode=require
 ```
 
-For hosted/serverless deployments, Neon recommends the pooled connection string when your app can create many concurrent connections.
+## Deploy backend to Render
 
-## Deployment
+### Prerequisites
 
-The backend deploys to Render from `render.yaml`. Set `NEON_DATABASE_URL` in Render before deploying.
+- GitHub repository connected to Render
+- Neon Postgres connection string ready
 
-The frontend deploys to Vercel from the repository root. `vercel.json` installs and builds the Vite app in `frontend/`, serves `frontend/dist`, and proxies `/api/*` to the Render backend. If the Render service URL changes, update the rewrite destination in `vercel.json`.
+### Steps
 
-## Backend
+1. In the Render dashboard, create a **Blueprint** from this repo (uses `render.yaml`), or create a **Web Service** manually with:
+   - **Root directory:** `backend`
+   - **Runtime:** Python 3.12
+   - **Build command:**
+     ```bash
+     pip install -r requirements.txt
+     python manage.py collectstatic --noinput
+     python manage.py migrate --noinput
+     ```
+   - **Start command:**
+     ```bash
+     gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -
+     ```
+
+2. Set the required environment variable in Render:
+   - `NEON_DATABASE_URL` — your Neon Postgres URL (required)
+
+3. Render auto-generates `DJANGO_SECRET_KEY` from `render.yaml`. Confirm these production settings are present:
+   - `DJANGO_DEBUG=false`
+   - `DJANGO_SKIP_ENV_FILES=true`
+   - `DJANGO_ALLOWED_HOSTS` includes your Render hostname and Vercel domain
+   - `DJANGO_CORS_ALLOWED_ORIGINS` includes your Vercel domain
+   - `DJANGO_CORS_ALLOWED_ORIGIN_REGEXES=^https://.*\.vercel\.app$` (covers preview deployments)
+
+4. Deploy and verify:
+   ```text
+   GET https://<your-render-service>.onrender.com/api/health/
+   ```
+   Expected response: `{"status":"ok","service":"internship-logging-evaluation","database":"ok"}`
+
+5. Optional: seed demo data from the Render shell:
+   ```bash
+   python manage.py seed_demo
+   ```
+
+### If your Render URL changes
+
+Update these files to match the new hostname:
+
+- `vercel.json` — `/api` rewrite destination
+- `render.yaml` — `DJANGO_ALLOWED_HOSTS`, `DJANGO_CORS_ALLOWED_ORIGINS`, `DJANGO_CSRF_TRUSTED_ORIGINS`
+- `.env.example` — documentation defaults
+
+## Deploy frontend to Vercel
+
+### Steps
+
+1. Import the GitHub repository into [Vercel](https://vercel.com).
+2. Vercel reads `vercel.json` at the repo root automatically:
+   - Installs dependencies in `frontend/`
+   - Builds with `npm run build`
+   - Serves `frontend/dist`
+   - Proxies `/api/*` to the Render backend
+
+3. No build-time environment variables are required if you use the `/api` proxy (the default in `frontend/src/api/client.js`).
+
+4. Optional: bypass the Vercel proxy and call Render directly by setting this in the Vercel project settings:
+   ```text
+   VITE_API_BASE_URL=https://<your-render-service>.onrender.com/api
+   ```
+   CORS is already configured on the backend for Vercel domains.
+
+### If your Vercel domain changes
+
+- Production domain: add it to `DJANGO_CORS_ALLOWED_ORIGINS` and `DJANGO_CSRF_TRUSTED_ORIGINS` on Render.
+- Preview deployments (`*.vercel.app`): already allowed via `DJANGO_CORS_ALLOWED_ORIGIN_REGEXES`.
+
+### If your Render URL changes
+
+Update the `/api` rewrite destination in `vercel.json`.
+
+## Local development
+
+### Backend
 
 ```powershell
 cd backend
@@ -33,14 +121,30 @@ python manage.py runserver 127.0.0.1:8000
 
 API root: `http://127.0.0.1:8000/api/`
 
-## Frontend
+### Frontend
 
 ```powershell
 cd frontend
-npm.cmd install
-npm.cmd run dev -- --host 127.0.0.1 --port 5174
+npm install
+npm run dev -- --host 127.0.0.1 --port 5174
 ```
 
 App URL: `http://127.0.0.1:5174/`
 
+The Vite dev server proxies `/api` to `http://127.0.0.1:8000` by default. Override with `VITE_DEV_API_PROXY` in `frontend/.env` if needed.
+
 Sign up first, then sign in with the created account. Account records are stored in Neon through Django.
+
+## Environment variables
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `NEON_DATABASE_URL` | Render (required) | Neon Postgres connection string |
+| `DJANGO_SECRET_KEY` | Render | Django secret (auto-generated by Blueprint) |
+| `DJANGO_DEBUG` | Render | Must be `false` in production |
+| `DJANGO_ALLOWED_HOSTS` | Render | Comma-separated hostnames |
+| `DJANGO_CORS_ALLOWED_ORIGINS` | Render | Allowed frontend origins |
+| `VITE_API_BASE_URL` | Vercel (optional) | Direct backend URL; default is `/api` proxy |
+| `VITE_DEV_API_PROXY` | Local frontend only | Vite dev proxy target |
+
+See `.env.example` (backend) and `frontend/.env.example` (frontend) for the full list.
