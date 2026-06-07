@@ -30,13 +30,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "internships",
     "rest_framework.authtoken",
-
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -112,7 +111,7 @@ CORS_ALLOWED_ORIGINS = env_list(
         "http://localhost:5174",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
-        "https://iles-beta.vercel.app",   
+        "https://iles-beta.vercel.app",
         "https://iles-1.onrender.com",
     ],
 )
@@ -129,8 +128,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = env_list(
 CSRF_TRUSTED_ORIGINS = env_list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
     [
-        "https://iles-sepia.vercel.app",
-        "https://iles-d4ub.vercel.app",
+        "https://iles-beta.vercel.app",
         "https://iles-1.onrender.com",
     ],
 )
@@ -148,4 +146,11 @@ SECURE_HSTS_SECONDS = int(env("DJANGO_SECURE_HSTS_SECONDS", "0"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
 SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
